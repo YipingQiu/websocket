@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>Testing chat</title>
+</head>
+<body>
+<div>
+    <div style="padding: 20px; align: center;">
+        <!--<input type="textarea">-->
+        <textarea id="messages"></textarea>
+    </div>
+
+    <div>
+        <input type="text" id="message">
+        <input type="button" id="send" value="发送">
+    </div>
+</div>
+<script src="jquery-3.2.1.js"></script>
+<script type="text/javascript">
+    var ws = new WebSocket('ws://localhost:8080/websocket/ws');
+
+    ws.onmessage =  function (p1) {
+        $('#messages').val($('#messages').val() + p1.data + '\r');
+    };
+
+    $('#send').on('click', function () {
+        ws.send($('#message').val());
+    });
+
+</script>
+</body>
+</html>

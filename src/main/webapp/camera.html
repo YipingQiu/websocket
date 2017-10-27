@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chrome Camera</title>
+    <script src="https://qiuyiping.oss-cn-beijing.aliyuncs.com/js/jquery-3.2.1.min.js"></script>
+</head>
+<body>
+<video id="video" width="640" height="480" autoplay></video>
+<button id="snap">Snap Photo</button>
+<canvas id="canvas" width="640" height="480"></canvas>
+<img id="img">
+<img id="receive_img">
+<div style="padding: 20px; align: center;">
+    <textarea id="messages"></textarea>
+</div>
+
+<script src="jquery-3.2.1.js"></script>
+<script type="text/javascript">
+    var ws = new WebSocket('ws://localhost:8080/websocket/wsVideo/18963951868');
+    var sendSize = 4196;
+    var is_snap = false;
+    var r_img = {};
+
+    ws.onmessage =  function (p1) {
+        //$('#messages').val($('#messages').val() + p1.data + '\r');
+        var data = JSON.parse(p1.data);
+        var millisecond = data.message.millisecond;
+        //console.log(millisecond);
+        if(r_img[millisecond] == undefined){
+            r_img[millisecond] = [];
+        }
+        var order = data.message.order;
+        var total = data.message.total;
+        r_img[millisecond][order] = data.message.data;
+        //console.log(r_img[millisecond]);
+        if(order == (total - 1)){
+            var img_ok = true;
+            for(var i = 0; i < total; i ++){
+                if(r_img[millisecond][i] == undefined){
+                    img_ok = false;
+                    break;
+                }
+            }
+            console.log(img_ok);
+            if(img_ok){
+                var img_url = '';
+                for(var i = 0; i < total; i ++){
+                    img_url += r_img[millisecond][i];
+                }
+                $('#receive_img').attr('src', img_url);
+                delete r_img[millisecond];
+            }
+        }
+
+
+
+    };
+
+//    $('#send').on('click', function () {
+//        ws.send($('#message').val());
+//    });
+    var canvas =  document.querySelector("#canvas");
+    var context = canvas.getContext("2d");
+    var video = document.getElementById("video");
+    var img = document.querySelector("#img");
+    $(document).ready(function () {
+        var videoObj = { "video": true };
+        var errBack = function (error) {
+            console.log("Video capture error: ", error.code);
+        };
+        if (navigator.webkitGetUserMedia) { // WebKit-prefixed
+            navigator.webkitGetUserMedia(videoObj, function (stream) {
+                console.log(stream);
+                video.src = window.URL.createObjectURL(stream);
+                video.play();
+            }, errBack);
+        } else if (navigator.mozGetUserMedia) { // Firefox-prefixed
+            navigator.mozGetUserMedia(videoObj, function (stream) {
+                video.src = window.URL.createObjectURL(stream);
+                video.play();
+            }, errBack);
+        } else if (navigator.getUserMedia) { // Standard
+            navigator.getUserMedia(videoObj, function (stream) {
+                video.src = stream;
+                video.play();
+            }, errBack);
+        };
+        $("#snap").on("click", function () {
+            is_snap = true;
+        });
+        //setInterval("console.log(new Date())", 100);
+        setInterval("snap()",40)
+    });
+
+    function snap() {
+        if(is_snap){
+            context.drawImage(video, 0, 0, 640, 480);
+            var src = canvas.toDataURL('image/jpeg');
+            var date = new Date().getTime();
+            console.log(date);
+            console.log(src.length);
+            var total = Math.ceil(src.length/sendSize);
+            for(var i = 0; i < total; i++){
+                var end = ((i + 1) * sendSize > src.length) ? (src.length) : ((i + 1) * sendSize);
+                //console.log(end);
+                console.log(end - i * sendSize);
+                var msg = {
+                    millisecond : date,
+                    total : total,
+                    order : i,
+                    data : src.substring(i * sendSize, end)
+                };
+                ws.send(JSON.stringify(msg));
+            }
+            img.src = src;
+        }
+    }
+    
+
+</script>
+</body>
+</html>

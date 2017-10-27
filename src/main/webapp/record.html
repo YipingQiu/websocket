@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>media record</title>
+    <script src="https://qiuyiping.oss-cn-beijing.aliyuncs.com/js/jquery-3.2.1.min.js"></script>
+</head>
+<body>
+<button onclick="startPreview()">preview</button>
+<button onclick="startRecording()">开始录制</button>
+<button onclick="stopRecording()">停止录制</button>
+<video id="vdo"></video>
+</body>
+<script>
+    var getUserMedia = navigator.webkitGetUserMedia;
+    var g_stream = null, g_recorder = null;
+    var chunks = [];
+    var vdo = document.querySelector("#vdo");
+
+    function startPreview() {
+        getUserMedia.call(navigator, {
+            video: true,
+            audio: true
+        }, function (stream) {
+            g_stream = stream;
+        }, function (error) {
+
+        });
+    }
+
+    function stopRecording() {
+        console.log(chunks);
+        g_recorder.stop();
+    }
+
+    function startRecording() {
+        g_recorder = new MediaRecorder(g_stream, {mimeType: "video/webm"});
+        g_recorder.ondataavailable = function (e) {
+            chunks.push(e.data);
+        };
+        g_recorder.onstop = function (e) {
+            var blob = new Blob(chunks, {'type': 'video/webm'});
+            var audioURL = URL.createObjectURL(blob);
+            vdo.src = audioURL;
+            window.open(audioURL);
+            var reader = new window.FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function () {
+                base64data = reader.result;
+                console.log(base64data);
+            }
+        }
+        g_recorder.start();
+    }
+
+    $(document).ready(function () {
+        startPreview();
+        window.setTimeout("startRecording()", 1000);
+
+    });
+</script>
+</html>
