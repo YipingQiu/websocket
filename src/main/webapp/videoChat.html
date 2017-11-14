@@ -7,12 +7,50 @@
 </head>
 <body>
 <video id="video" width="640" height="480" autoplay></video>
+<video id="video2" width="640" height="480" autoplay></video>
 
 </body>
 <script>
+//    var ws = new WebSocket('ws://localhost:8080/websocket/wsVideo/18963951868');
+
+    var r_img = {};
+//    ws.onmessage =  function (p1) {
+//        //$('#messages').val($('#messages').val() + p1.data + '\r');
+//        var data = JSON.parse(p1.data);
+//        var millisecond = data.message.millisecond;
+//        //console.log(millisecond);
+//        if(r_img[millisecond] == undefined){
+//            r_img[millisecond] = [];
+//        }
+//        var order = data.message.order;
+//        var total = data.message.total;
+//        r_img[millisecond][order] = data.message.data;
+//        //console.log(r_img[millisecond]);
+//        if(order == (total - 1)){
+//            var img_ok = true;
+//            for(var i = 0; i < total; i ++){
+//                if(r_img[millisecond][i] == undefined){
+//                    img_ok = false;
+//                    break;
+//                }
+//            }
+//            console.log(img_ok);
+//            if(img_ok){
+//                var img_url = '';
+//                for(var i = 0; i < total; i ++){
+//                    img_url += r_img[millisecond][i];
+//                }
+//                $('#video2').attr('src', img_url);
+//                delete r_img[millisecond];
+//            }
+//        }
+//
+//
+//
+//    };
 
     var video = document.getElementById("video");
-    window.setInterval("console.log(new Date())", 1000);
+//    window.setInterval("console.log(new Date())", 1000);
     $(document).ready(function () {
         var videoObj = {"video": true};
         var errBack = function (error) {
@@ -78,18 +116,38 @@
             reader.readAsDataURL(blob);
             reader.onloadend = function () {
                 base64data = reader.result;
-                console.log(base64data);
+//                sendMsg(base64data);
+                //console.log(base64data);
             }
         }
         g_recorder.start();
     }
 
+    function sendMsg(data) {
+
+        var date = new Date().getTime();
+        var sendSize = 4196;
+        var total = Math.ceil(data.length/sendSize);
+        for(var i = 0; i < total; i++){
+            var end = ((i + 1) * sendSize > data.length) ? (data.length) : ((i + 1) * sendSize);
+            //console.log(end);
+//            console.log(end - i * sendSize);
+            var msg = {
+                millisecond : date,
+                total : total,
+                order : i,
+                data : data.substring(i * sendSize, end)
+            };
+            ws.send(JSON.stringify(msg));
+        }
+    }
+
     function upload(){
-        console.log(111);
+//        console.log(111);
         stopRecording();
         //上传数据
-        chunks = [];
-        window.setTimeout("startRecording()", 300);
+        chunks = [];startRecording();
+//        window.setTimeout("startRecording()", 1);
     }
 </script>
 </html>

@@ -19,8 +19,8 @@ public class Webm {
 
 	public static void main(String[] args) {
 		try {
-			StringBuffer sb = readFile("C:\\Users\\Jack\\Desktop\\video2.txt");
-			decoderBase64File(sb.toString(), "C:\\Users\\Jack\\Desktop\\video.webm");
+			StringBuffer sb = readFile("E:\\dir\\video.txt");
+			decoderBase64File(sb.toString(), "E:\\dir\\video.webm");
 		} catch (Exception e) {
 			e.printStackTrace();
 

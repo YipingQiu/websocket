@@ -3,10 +3,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Chrome Camera</title>
-    <script src="https://qiuyiping.oss-cn-beijing.aliyuncs.com/js/jquery-3.2.1.min.js"></script>
+    <style>
+        .face {
+            position: absolute;
+            border: 2px solid #FFF;
+        }
+    </style>
 </head>
 <body>
+
 <video id="video" width="640" height="480" autoplay></video>
 <button id="snap">Snap Photo</button>
 <canvas id="canvas" width="640" height="480"></canvas>
@@ -17,46 +24,47 @@
 </div>
 
 <script src="jquery-3.2.1.js"></script>
+<script src="plugins/facedetection/dist/jquery.facedetection.js"></script>
 <script type="text/javascript">
-    var ws = new WebSocket('ws://localhost:8080/websocket/wsVideo/18963951868');
+//    var ws = new WebSocket('ws://localhost:8080/websocket/wsVideo/18963951868');
     var sendSize = 4196;
     var is_snap = false;
     var r_img = {};
 
-    ws.onmessage =  function (p1) {
-        //$('#messages').val($('#messages').val() + p1.data + '\r');
-        var data = JSON.parse(p1.data);
-        var millisecond = data.message.millisecond;
-        //console.log(millisecond);
-        if(r_img[millisecond] == undefined){
-            r_img[millisecond] = [];
-        }
-        var order = data.message.order;
-        var total = data.message.total;
-        r_img[millisecond][order] = data.message.data;
-        //console.log(r_img[millisecond]);
-        if(order == (total - 1)){
-            var img_ok = true;
-            for(var i = 0; i < total; i ++){
-                if(r_img[millisecond][i] == undefined){
-                    img_ok = false;
-                    break;
-                }
-            }
-            console.log(img_ok);
-            if(img_ok){
-                var img_url = '';
-                for(var i = 0; i < total; i ++){
-                    img_url += r_img[millisecond][i];
-                }
-                $('#receive_img').attr('src', img_url);
-                delete r_img[millisecond];
-            }
-        }
-
-
-
-    };
+//    ws.onmessage =  function (p1) {
+//        //$('#messages').val($('#messages').val() + p1.data + '\r');
+//        var data = JSON.parse(p1.data);
+//        var millisecond = data.message.millisecond;
+//        //console.log(millisecond);
+//        if(r_img[millisecond] == undefined){
+//            r_img[millisecond] = [];
+//        }
+//        var order = data.message.order;
+//        var total = data.message.total;
+//        r_img[millisecond][order] = data.message.data;
+//        //console.log(r_img[millisecond]);
+//        if(order == (total - 1)){
+//            var img_ok = true;
+//            for(var i = 0; i < total; i ++){
+//                if(r_img[millisecond][i] == undefined){
+//                    img_ok = false;
+//                    break;
+//                }
+//            }
+//            console.log(img_ok);
+//            if(img_ok){
+//                var img_url = '';
+//                for(var i = 0; i < total; i ++){
+//                    img_url += r_img[millisecond][i];
+//                }
+//                $('#receive_img').attr('src', img_url);
+//                delete r_img[millisecond];
+//            }
+//        }
+//
+//
+//
+//    };
 
 //    $('#send').on('click', function () {
 //        ws.send($('#message').val());
@@ -88,10 +96,10 @@
             }, errBack);
         };
         $("#snap").on("click", function () {
-            is_snap = true;
+            is_snap = !is_snap;
         });
         //setInterval("console.log(new Date())", 100);
-        setInterval("snap()",40)
+        setInterval("snap()",100)
     });
 
     function snap() {
@@ -99,22 +107,47 @@
             context.drawImage(video, 0, 0, 640, 480);
             var src = canvas.toDataURL('image/jpeg');
             var date = new Date().getTime();
-            console.log(date);
-            console.log(src.length);
+//            console.log(date);
+//            console.log(src.length);
             var total = Math.ceil(src.length/sendSize);
             for(var i = 0; i < total; i++){
                 var end = ((i + 1) * sendSize > src.length) ? (src.length) : ((i + 1) * sendSize);
                 //console.log(end);
-                console.log(end - i * sendSize);
+//                console.log(end - i * sendSize);
                 var msg = {
                     millisecond : date,
                     total : total,
                     order : i,
                     data : src.substring(i * sendSize, end)
                 };
-                ws.send(JSON.stringify(msg));
+//                ws.send(JSON.stringify(msg));
             }
             img.src = src;
+            img.onload = function () {
+                $('.face').remove();
+                $('#img').faceDetection({
+                    complete: function (faces) {
+                        for (var i = 0; i < faces.length; i++) {
+                            $('<div>', {
+                                'class':'face',
+                                'css': {
+                                    'position': 'absolute',
+                                    'left':     faces[i].x * faces[i].scaleX + 'px',
+                                    'top':      faces[i].y * faces[i].scaleY + 'px',
+                                    'width':    faces[i].width  * faces[i].scaleX + 'px',
+                                    'height':   faces[i].height * faces[i].scaleY + 'px'
+                                }
+                            })
+                                .insertAfter(this);
+                        }
+                    },
+                    error:function (code, message) {
+                        alert('Error: ' + message);
+                    }
+                });
+            };
+
+
         }
     }
     
