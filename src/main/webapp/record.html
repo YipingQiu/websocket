@@ -10,6 +10,8 @@
 <button onclick="startRecording()">开始录制</button>
 <button onclick="stopRecording()">停止录制</button>
 <video id="vdo"></video>
+<br>
+<textarea id="txt" style="width: 300px;height: 500px;"></textarea>
 </body>
 <script>
     var getUserMedia = navigator.webkitGetUserMedia;
@@ -46,16 +48,38 @@
             var reader = new window.FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = function () {
-                base64data = reader.result;
-                console.log(base64data);
+                var base64data = reader.result;
+                console.log(base64data.split(',')[1]);
+                var form = new FormData();
+                form.append("idcardNumber", "42082119921021351X");
+                form.append("idcardName", '邱宜平');
+                form.append("validateData", '3388');
+                form.append("video", blob);
+//                form.append("base", base64data.split(',')[1]);
+
+//                form.append("base", base64data.split(',')[1]);
+                $.ajax({
+                    url : 'http://192.168.137.1:8082/fruit/face/idcardlivedetectfour',
+                    type : 'post',
+                    data : form,
+                    processData:false,
+                    contentType:false,
+                    success : function (data) {
+                        $('#txt').text(JSON.stringify(data));
+                        console.log(data);
+                    },
+                    error : function () {
+                        console.log("error");
+                    }
+                });
             }
         }
         g_recorder.start();
     }
 
     $(document).ready(function () {
-        startPreview();
-        window.setTimeout("startRecording()", 1000);
+//        startPreview();
+//        window.setTimeout("startRecording()", 1000);
 
     });
 </script>
