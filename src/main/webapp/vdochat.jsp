@@ -37,7 +37,7 @@ Welcome<br/><input id="text" type="text"/>
     //连接成功建立的回调方法
     websocket.onopen = function () {
         setMessageInnerHTML("WebSocket连接成功");
-    }
+    };
 
     // 创建PeerConnection实例 (参数为null则没有iceserver，即使没有stunserver和turnserver，仍可在局域网下通讯)
     var pc = new webkitRTCPeerConnection(null);

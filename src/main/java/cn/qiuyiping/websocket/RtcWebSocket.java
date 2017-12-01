@@ -12,6 +12,8 @@ import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author lenovo
@@ -19,17 +21,25 @@ import java.util.List;
 @ServerEndpoint("/rtcws")
 public class RtcWebSocket {
 
-    private static final List<Session> sessions = new ArrayList<>();
+    private static final List<Session> sessionList = new ArrayList<>();
+    private static final Map<String, Session> sessionMap = new ConcurrentHashMap<>();
 
     @OnMessage
-    public void onMessage(String message) throws IOException, InterruptedException {
-
+    public void onMessage(String message) throws IOException {
+        JSONObject data = JSONObject.parseObject(message);
+        if (data.getJSONObject("offer") != null || data.getJSONObject("answer") != null || data.getJSONObject("icecandidate") != null) {
+            data = data.getJSONObject("offer") != null ? data.getJSONObject("offer") :
+                    data.getJSONObject("answer") != null ? data.getJSONObject("answer") :
+                            data.getJSONObject("icecandidate");
+            sessionMap.get(data.getString("to")).getBasicRemote().sendText(message);
+        }
     }
 
     @OnOpen
     public void onOpen(Session session) throws IOException {
         System.out.println("Client connected");
-        sessions.add(session);
+        sessionList.add(session);
+        sessionMap.put(session.getId(), session);
         JSONObject data = new JSONObject();
         data.put("mySessionId", session.getId());
         session.getBasicRemote().sendText(data.toString());
@@ -39,19 +49,20 @@ public class RtcWebSocket {
     private void sendAllSession() throws IOException {
         JSONObject data = new JSONObject();
         JSONArray array = new JSONArray();
-        for(Session sess : sessions){
+        for (Session sess : sessionList) {
             array.add(sess.getId());
         }
         data = new JSONObject();
         data.put("allSessionId", array);
-        for(Session sess : sessions){
+        for (Session sess : sessionList) {
             sess.getBasicRemote().sendText(data.toJSONString());
         }
     }
 
     @OnClose
     public void onClose(Session session) throws IOException {
-        sessions.remove(session);
+        sessionList.remove(session);
+        sessionList.remove(session.getId());
         System.out.println("Connection closed");
         sendAllSession();
     }
